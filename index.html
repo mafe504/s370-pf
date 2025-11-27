@@ -1,0 +1,810 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Heart, Users, Sprout, MapPin, Feather, ArrowRight, Anchor, Leaf, Menu, X, BookOpen, Eye, FileText, Volume2, Square } from 'lucide-react';
+
+// --- Components ---
+
+// 1. Light Rope Switch Component (Moved to left to avoid mobile menu conflict)
+const LightRope = ({ isDark, toggleTheme }) => {
+  const [isPulled, setIsPulled] = useState(false);
+
+  const handleClick = () => {
+    setIsPulled(true);
+    toggleTheme();
+    setTimeout(() => setIsPulled(false), 300);
+  };
+
+  return (
+    <div className="fixed top-0 left-6 md:left-10 z-[60] flex flex-col items-center origin-top" style={{ transform: isPulled ? 'translateY(20px)' : 'translateY(0)', transition: 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+      <div className="h-16 md:h-24 w-0.5 bg-stone-400 dark:bg-stone-600"></div>
+      <button 
+        onClick={handleClick}
+        className={`w-3 h-8 md:w-4 md:h-10 rounded-full shadow-md transition-colors duration-300 focus:outline-none ${isDark ? 'bg-stone-700 border-stone-600' : 'bg-amber-100 border-amber-200'} border-2`}
+        title={isDark ? "Turn On Lights" : "Turn Off Lights"}
+      >
+        <div className={`w-full h-full rounded-full opacity-50 ${isDark ? 'bg-black' : 'bg-white'}`}></div>
+      </button>
+    </div>
+  );
+};
+
+// 2. Art Magic: Ambient Gold Dust (Floating Particles)
+const AmbientGoldDust = () => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    
+    // Set canvas size
+    const resize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+    };
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Particle Class
+    class Particle {
+      constructor() {
+        this.reset();
+        // Randomize initial position
+        this.y = Math.random() * height;
+        this.life = Math.random() * 1; // Random start phase for twinkle
+      }
+
+      reset() {
+        this.x = Math.random() * width;
+        this.y = height + Math.random() * 100; // Start below screen
+        this.vy = Math.random() * 0.5 + 0.1; // Upward float speed
+        this.vx = (Math.random() - 0.5) * 0.2; // Slight drift
+        this.size = Math.random() * 2; // Varied sizes
+        this.maxLife = Math.random() * 100 + 100;
+        this.life = 0; 
+        this.opacity = 0;
+        this.fadeIn = true;
+      }
+
+      update() {
+        this.y -= this.vy;
+        this.x += this.vx;
+        
+        // Twinkle effect
+        if (this.fadeIn) {
+          this.opacity += 0.01;
+          if (this.opacity >= 0.6) this.fadeIn = false;
+        } else {
+          this.opacity -= 0.01;
+          if (this.opacity <= 0.1) this.fadeIn = true;
+        }
+
+        // Reset if off screen
+        if (this.y < -10) {
+          this.reset();
+        }
+      }
+
+      draw() {
+        ctx.beginPath();
+        // Antique Gold Color
+        ctx.fillStyle = `rgba(217, 119, 6, ${Math.max(0, this.opacity)})`; 
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    const particles = Array.from({ length: 40 }, () => new Particle());
+
+    const animate = () => {
+      ctx.clearRect(0, 0, width, height);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => window.removeEventListener('resize', resize);
+  }, []);
+
+  return <canvas ref={canvasRef} className="fixed inset-0 z-0 pointer-events-none" />;
+};
+
+// 3. Refined Component: Smoother Magic Bird Background (Hero Section Only)
+const MagicBirdBackground = ({ isDark }) => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    let animationFrameId;
+    let width, height;
+
+    // Bird Class
+    class Bird {
+      constructor() {
+        this.init();
+      }
+
+      init(resetX = false) {
+        this.x = resetX ? -50 : Math.random() * width;
+        this.y = Math.random() * height * 0.6; // Top 60% of screen
+        this.vx = Math.random() * 0.8 + 0.4; 
+        this.vy = (Math.random() - 0.5) * 0.2;
+        this.wingSpan = Math.random() * 15 + 10;
+        this.flapSpeed = Math.random() * 0.003 + 0.002; 
+        this.flapOffset = Math.random() * Math.PI * 2;
+        this.opacity = Math.random() * 0.2 + 0.15; 
+      }
+
+      update(time) {
+        this.x += this.vx;
+        // Add gentle sine wave to Y for gliding feel
+        this.y += this.vy + Math.sin(time * 0.001 + this.flapOffset) * 0.3;
+        if (this.x > width + 50) {
+          this.init(true);
+        }
+      }
+
+      draw(time) {
+        ctx.beginPath();
+        // Adjust bird color based on theme
+        ctx.strokeStyle = isDark ? `rgba(200, 200, 200, ${this.opacity})` : `rgba(60, 60, 55, ${this.opacity})`; 
+        ctx.lineWidth = 1.5;
+
+        const wingY = Math.sin(time * this.flapSpeed + this.flapOffset) * 6;
+        ctx.moveTo(this.x - this.wingSpan/2, this.y + wingY);
+        ctx.quadraticCurveTo(this.x, this.y - 3, this.x + this.wingSpan/2, this.y + wingY);
+        ctx.stroke();
+      }
+    }
+
+    let birds = [];
+
+    const resize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+    };
+
+    const initSimulation = () => {
+      resize();
+      birds = Array.from({ length: 15 }, () => new Bird()); // Reduced bird count for mobile performance
+    };
+
+    const animate = (time) => {
+      ctx.clearRect(0, 0, width, height);
+      birds.forEach(bird => { bird.update(time); bird.draw(time); });
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    initSimulation();
+    window.addEventListener('resize', resize);
+    animate(0);
+
+    return () => {
+      window.removeEventListener('resize', resize);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [isDark]); 
+
+  return <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none" />;
+};
+
+const FadeIn = ({ children, delay = 0 }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const domRef = React.useRef();
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => setIsVisible(entry.isIntersecting));
+    });
+    const currentElement = domRef.current;
+    if (currentElement) observer.observe(currentElement);
+    return () => {
+      if (currentElement) observer.unobserve(currentElement);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={domRef}
+      className={`transition-all duration-1000 ease-out transform ${
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+      }`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+};
+
+const SectionHeading = ({ children, align = "center" }) => (
+  <h2 className={`text-3xl md:text-5xl font-serif text-stone-800 dark:text-stone-100 mb-6 md:mb-8 relative inline-block ${align === "center" ? "text-center" : "text-left"}`}>
+    {children}
+    <span className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-70"></span>
+  </h2>
+);
+
+const QuoteCard = ({ text, author, accent = "amber" }) => (
+  <div className="relative p-6 md:p-12 bg-stone-50 dark:bg-stone-800 border-l-4 border-amber-400 shadow-sm my-6 md:my-8 transition-colors duration-500">
+    <div className="absolute top-2 left-2 md:top-4 md:left-4 text-4xl md:text-6xl text-stone-200 dark:text-stone-600 font-serif leading-none">"</div>
+    <p className="relative z-10 text-lg md:text-2xl font-serif text-stone-700 dark:text-stone-200 italic leading-relaxed">
+      {text}
+    </p>
+    {author && (
+      <p className="mt-4 text-xs md:text-sm font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">
+        — {author}
+      </p>
+    )}
+  </div>
+);
+
+const NavLink = ({ href, children, onClick }) => (
+  <a 
+    href={href} 
+    onClick={onClick}
+    className="text-stone-600 dark:text-stone-300 hover:text-amber-600 dark:hover:text-amber-400 font-medium tracking-wide transition-colors duration-300 relative group"
+  >
+    {children}
+    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 transition-all duration-300 group-hover:w-full"></span>
+  </a>
+);
+
+// Generic Modal Component
+const GenericModal = ({ isOpen, onClose, url, title }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
+      <div 
+        className="absolute inset-0 bg-stone-900/80 backdrop-blur-sm" 
+        onClick={onClose}
+      ></div>
+      <div className="relative bg-white w-full max-w-4xl h-[85vh] md:h-[80vh] rounded-lg shadow-2xl flex flex-col overflow-hidden animate-fadeIn mt-8 md:mt-0">
+        <div className="flex justify-between items-center p-3 md:p-4 border-b border-stone-200 bg-stone-50">
+          <h3 className="font-serif text-lg md:text-xl text-stone-800 truncate pr-4">{title}</h3>
+          <button 
+            onClick={onClose}
+            className="p-2 hover:bg-stone-200 rounded-full transition-colors text-stone-600 flex-shrink-0"
+          >
+            <X size={24} />
+          </button>
+        </div>
+        <div className="flex-1 w-full h-full bg-stone-100 overflow-hidden">
+          <iframe 
+            src={url} 
+            className="w-full h-full border-none" 
+            title="Content"
+            allow="autoplay"
+          ></iframe>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default function App() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [activeLang, setActiveLang] = useState(null);
+  const [availableVoices, setAvailableVoices] = useState([]);
+  const [modalContent, setModalContent] = useState(null);
+  
+  // Dark Mode State
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      setAvailableVoices(voices);
+    };
+    loadVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }, []);
+
+  // Toggle Dark Mode Logic
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+  };
+
+  const articleUrl = "https://docs.google.com/document/d/1Bo3p154MNRQllaDKhtK-qEuAS0ZZgeQu_hInotbBmek/preview";
+  const sketch1Url = "https://docs.google.com/viewer?url=https://raw.githubusercontent.com/mafe504/s370-pf/main/files/sketch2%20(1).pdf&embedded=true";
+  const sketch2Url = "https://docs.google.com/viewer?url=https://raw.githubusercontent.com/mafe504/s370-pf/main/files/sketch3%20(1).pdf&embedded=true";
+  const emergentSketchUrl = "https://docs.google.com/viewer?url=https://raw.githubusercontent.com/mafe504/s370-pf/main/files/sketch1%20(1).pdf&embedded=true";
+
+  const openModal = (title, url) => {
+    setModalContent({ title, url });
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeModal = () => {
+    setModalContent(null);
+    document.body.style.overflow = 'unset';
+  };
+
+  const speak = (text, lang) => {
+    if (!('speechSynthesis' in window)) {
+      alert("Text-to-speech is not supported in this browser.");
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    if (activeLang === lang) {
+      setActiveLang(null);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    let voices = window.speechSynthesis.getVoices();
+    if (voices.length === 0) voices = availableVoices;
+
+    if (voices.length > 0) {
+      const voice = voices.find(v => v.lang === lang) || 
+                    voices.find(v => v.lang.startsWith(lang)) ||
+                    voices.find(v => v.lang.includes(lang));
+      if (voice) {
+        utterance.voice = voice;
+      }
+    }
+
+    utterance.lang = lang;
+    utterance.rate = 0.85;
+    
+    utterance.onend = () => setActiveLang(null);
+    
+    utterance.onerror = (e) => {
+      if (e.error === 'interrupted' || e.error === 'canceled') {
+        return;
+      }
+      console.error("Speech error:", e); 
+      setActiveLang(null); 
+    };
+
+    setTimeout(() => {
+      window.speechSynthesis.speak(utterance);
+      setActiveLang(lang);
+    }, 50);
+  };
+
+  const englishPoem = `As you prepare your breakfast, think of others (do not forget the pigeon's food).\nAs you conduct your wars, think of others (do not forget those who seek peace).\nAs you pay your water bill, think of others (those who are nursed by clouds).\nAs you return home, to your home, think of others (do not forget the people of the tents).\nAs you sleep and count the stars, think of others...`;
+  const arabicPoem = `وأنتَ تُعِدُّ فطورك، فكِّر بغيركَ، لا تَنْسَ قوتَ الحمام.\nوأنتَ تخوضُ حروبكَ، فكِّر بغيركَ، لا تنس مَنْ يطلبون السلام.\nوأنتَ تسدد فاتورةَ الماء، فكِّر بغيركَ، مَنْ يرضَعُون الغمامٍ.\nوأنتَ تعودُ إلى البيت، بيتكَ، فكِّر بغيركَ، لا تنس شعب الخيامْ.\nوأنت تنام وتُحصي الكواكبَ، فكِّر بغيركَ...`;
+
+  return (
+    <div className={`${isDarkMode ? 'dark' : ''}`}>
+      <div className="min-h-screen bg-[#faf9f6] dark:bg-stone-950 text-stone-800 dark:text-stone-100 font-sans overflow-x-hidden selection:bg-amber-200 transition-colors duration-500">
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap');
+          .font-serif { font-family: 'Cormorant Garamond', serif; }
+          .font-sans { font-family: 'Montserrat', sans-serif; }
+          .font-arabic { font-family: 'Amiri', serif; }
+          .kintsugi-line {
+            position: absolute;
+            background: linear-gradient(90deg, transparent, #fbbf24, #d97706, transparent);
+            opacity: 0.8;
+            filter: drop-shadow(0 0 2px rgba(251, 191, 36, 0.5));
+          }
+          @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+          .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+          
+          /* Custom Artist Cursor CSS - Hidden on touch devices to prevent issues */
+          @media (pointer: fine) {
+            body {
+              cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="%23d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>') 0 24, auto;
+            }
+            a, button {
+              cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="%23fbbf24" stroke="%23b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>') 0 24, pointer;
+            }
+          }
+        `}</style>
+
+        {/* Light Rope Switch - Moved to Left to avoid mobile menu overlap */}
+        <LightRope isDark={isDarkMode} toggleTheme={toggleTheme} />
+
+        {/* Art Magic: Ambient Floating Gold Dust */}
+        <AmbientGoldDust />
+
+        <GenericModal isOpen={!!modalContent} onClose={closeModal} url={modalContent?.url} title={modalContent?.title} />
+
+        {/* Navigation */}
+        <nav className={`fixed w-full z-50 transition-all duration-500 ${scrolled ? 'bg-white/95 dark:bg-stone-900/95 backdrop-blur-md shadow-md py-3 md:py-4' : 'bg-transparent py-4 md:py-6'}`}>
+          <div className="container mx-auto px-4 md:px-6 flex justify-between items-center relative">
+            {/* Logo Centered on Mobile, Left on Desktop to allow room for Rope on Left */}
+            <div className="w-full flex justify-center md:justify-start pl-12 md:pl-0">
+              <a href="#" className="text-xl md:text-2xl font-serif font-bold text-stone-800 dark:text-white tracking-wider relative">
+                MUSA<span className="text-amber-500">.</span>
+              </a>
+            </div>
+            
+            <div className="hidden md:flex space-x-8 items-center">
+              <NavLink href="#leadership">Leadership</NavLink>
+              <NavLink href="#body-politics">Body Politics</NavLink>
+              <NavLink href="#emergent-strategy">Emergent Strategy</NavLink>
+              <NavLink href="#reflection">Reflection</NavLink>
+            </div>
+            
+            {/* Mobile Menu Button - Absolute Right */}
+            <button className="md:hidden text-stone-800 dark:text-stone-200 p-2 absolute right-4 top-1/2 transform -translate-y-1/2 z-50 focus:outline-none" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+              {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            </button>
+          </div>
+          
+          {isMenuOpen && (
+            <div className="fixed inset-0 bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl z-40 flex flex-col justify-center items-center space-y-8 animate-fadeIn md:hidden">
+              <a href="#leadership" className="text-2xl font-serif text-stone-800 dark:text-stone-100" onClick={() => setIsMenuOpen(false)}>Leadership</a>
+              <a href="#body-politics" className="text-2xl font-serif text-stone-800 dark:text-stone-100" onClick={() => setIsMenuOpen(false)}>Body Politics</a>
+              <a href="#emergent-strategy" className="text-2xl font-serif text-stone-800 dark:text-stone-100" onClick={() => setIsMenuOpen(false)}>Emergent Strategy</a>
+              <a href="#reflection" className="text-2xl font-serif text-stone-800 dark:text-stone-100" onClick={() => setIsMenuOpen(false)}>Reflection</a>
+            </div>
+          )}
+        </nav>
+
+        {/* Hero Section */}
+        <header className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#f0f0eb] dark:bg-stone-950 transition-colors duration-500 pt-20 md:pt-0 pb-16">
+          <MagicBirdBackground isDark={isDarkMode} />
+          <div className="absolute inset-0 z-0">
+            <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')] dark:opacity-5"></div>
+            <div className="kintsugi-line w-[150%] h-0.5 top-1/3 -left-1/4 rotate-12"></div>
+            <div className="kintsugi-line w-[80%] h-0.5 bottom-1/4 right-0 -rotate-6"></div>
+          </div>
+          <div className="container mx-auto px-4 md:px-6 z-10 text-center relative">
+            <FadeIn>
+              <p className="text-amber-600 font-medium tracking-[0.2em] mb-3 md:mb-4 uppercase text-sm md:text-base">Final Portfolio</p>
+              <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-serif text-stone-900 dark:text-white mb-4 md:mb-6 leading-tight">
+                Transformative <br/>
+                <span className="italic text-stone-600 dark:text-stone-400">Leadership</span>
+              </h1>
+              <div className="w-16 md:w-24 h-1 bg-amber-400 mx-auto mb-6 md:mb-8"></div>
+              <p className="text-lg md:text-2xl text-stone-600 dark:text-stone-300 max-w-2xl mx-auto font-light leading-relaxed px-4">
+                Centering Justice, Collective Action, and the Art of Healing.
+              </p>
+              <div className="mt-8 md:mt-12 flex flex-col sm:flex-row justify-center items-center gap-4 px-4">
+                <a href="#intro" className="w-full sm:w-auto px-6 md:px-8 py-3 bg-stone-900 dark:bg-amber-600 text-white font-medium hover:bg-amber-600 dark:hover:bg-amber-500 transition-colors duration-300 rounded-sm text-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                  Explore The Journey
+                </a>
+                <a href="https://docs.google.com/presentation/d/157j-qLhEHmIFJbIkvu3cipfim8PCWK2Aqhpy5w2Vpg8/edit?usp=sharing" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto px-6 md:px-8 py-3 border border-stone-400 dark:border-stone-500 text-stone-600 dark:text-stone-300 font-medium hover:border-amber-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-white dark:hover:bg-stone-800 transition-all duration-300 rounded-sm text-center backdrop-blur-sm">
+                  Slide Deck
+                </a>
+              </div>
+              <div className="mt-16 max-w-lg mx-auto relative group cursor-default animate-fadeIn">
+                <div className="absolute -inset-1 bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                <div className="relative bg-white/60 dark:bg-stone-900/60 backdrop-blur-md p-6 rounded-lg border border-amber-100 dark:border-stone-700 shadow-xl">
+                   <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-amber-400 w-8 h-8 rounded-full flex items-center justify-center shadow-md">
+                      <Feather size={14} className="text-white" />
+                   </div>
+                   <p className="font-arabic text-2xl md:text-3xl text-stone-800 dark:text-stone-100 mb-2 mt-2 leading-relaxed drop-shadow-sm" dir="rtl">
+                      "لَا تَحْزَنْ إِنَّ اللَّهَ مَعَنَا"
+                   </p>
+                   <div className="h-px w-16 bg-amber-300 mx-auto my-3 opacity-60"></div>
+                   <p className="text-stone-700 dark:text-stone-300 italic font-serif text-lg tracking-wide">
+                      "Do not grieve; indeed Allah is with us."
+                   </p>
+                   <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-3 uppercase tracking-[0.2em] font-bold">
+                      Quran 9:40
+                   </p>
+                </div>
+              </div>
+            </FadeIn>
+          </div>
+        </header>
+
+        {/* Intro / Theme Section */}
+        <section id="intro" className="py-16 md:py-24 bg-white dark:bg-stone-900 transition-colors duration-500 relative">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
+              <FadeIn>
+                <div className="relative mx-auto max-w-md md:max-w-full">
+                  <div className="absolute inset-0 bg-stone-200 dark:bg-stone-700 transform translate-x-3 translate-y-3 md:translate-x-4 md:translate-y-4"></div>
+                  <img src="https://github.com/mafe504/s370/blob/main/images/9.jpg?raw=true" alt="Kintsugi Bowl" className="relative z-10 w-full h-auto shadow-xl grayscale hover:grayscale-0 transition-all duration-700" />
+                  <div className="absolute -bottom-4 -right-4 md:-bottom-6 md:-right-6 bg-white dark:bg-stone-800 p-3 md:p-4 shadow-lg z-20 border-l-4 border-amber-400">
+                    <p className="font-serif text-lg md:text-2xl text-stone-800 dark:text-stone-100">Kintsugi</p>
+                    <p className="text-[10px] md:text-xs text-stone-500 dark:text-stone-400 uppercase tracking-widest">Golden Repair</p>
+                  </div>
+                </div>
+              </FadeIn>
+              <FadeIn delay={200}>
+                <h2 className="text-3xl md:text-4xl font-serif mb-4 md:mb-6 text-stone-800 dark:text-stone-100 mt-8 md:mt-0">Healing & Restoration</h2>
+                <p className="text-base md:text-lg text-stone-600 dark:text-stone-300 mb-6 leading-relaxed">
+                  To be a good leader to others, one must heal oneself first. I learned this through the art of <span className="text-amber-600 dark:text-amber-400 font-semibold"> Kintsugi</span>—fixing broken pottery with gold.
+                </p>
+                <ul className="space-y-4 mb-8">
+                  <li className="flex items-start">
+                    <span className="text-amber-500 mr-4 mt-1 flex-shrink-0"><Feather size={20} /></span>
+                    <p className="text-stone-700 dark:text-stone-300">We do not hide our cracks; we highlight them with gold (self-love and compassion).</p>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-amber-500 mr-4 mt-1 flex-shrink-0"><Feather size={20} /></span>
+                    <p className="text-stone-700 dark:text-stone-300">My scars and struggles are not failures; they are where the gold lies.</p>
+                  </li>
+                </ul>
+                <QuoteCard text="Never a failure, always a lesson." author="Adrienne Maree Brown" />
+                <div className="mt-8 text-center md:text-left">
+                  <a href="https://mafe504.github.io/s370/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-6 py-3 border-2 border-amber-500 text-amber-600 dark:text-amber-400 font-semibold hover:bg-amber-500 hover:text-white transition-all duration-300 tracking-wide uppercase text-sm">
+                    Explore My Journey <ArrowRight size={16} className="ml-2" />
+                  </a>
+                </div>
+              </FadeIn>
+            </div>
+          </div>
+        </section>
+
+        {/* Leadership Section */}
+        <section id="leadership" className="py-16 md:py-24 bg-stone-100 dark:bg-stone-800 transition-colors duration-500">
+          <div className="container mx-auto px-4 md:px-6">
+            <FadeIn>
+              <div className="text-center mb-12 md:mb-16">
+                <span className="text-amber-600 dark:text-amber-400 font-bold tracking-widest uppercase text-sm">Part I</span>
+                <SectionHeading>Leadership: Standing Together</SectionHeading>
+                <p className="max-w-2xl mx-auto text-stone-600 dark:text-stone-400 mt-2 md:mt-4 text-sm md:text-base">
+                  "Standing together is an action, not just a nice idea."
+                </p>
+              </div>
+            </FadeIn>
+            <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+              <FadeIn delay={100}>
+                <div className="bg-white dark:bg-stone-700 p-6 md:p-10 h-full shadow-sm hover:shadow-md transition-all border-t-4 border-stone-800 dark:border-stone-500 flex flex-col items-start">
+                  <div className="bg-amber-100 dark:bg-stone-600 w-12 h-12 rounded-full flex items-center justify-center mb-4 md:mb-6 text-amber-600 dark:text-amber-400">
+                    <Users size={24} />
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-serif font-bold mb-3 md:mb-4 text-stone-800 dark:text-white">The Definition</h3>
+                  <p className="text-stone-600 dark:text-stone-300 mb-6 leading-relaxed text-sm md:text-base">
+                    My definition of a leader is someone who walks side-by-side with their people, not ahead of them. True leadership isn't about giving orders from high offices; it's about sharing the burden and building unity.
+                  </p>
+                  <div className="space-y-3 mb-8 w-full">
+                    <div className="flex items-center text-sm font-semibold text-stone-800 dark:text-stone-200">
+                      <span className="w-2 h-2 bg-amber-500 rounded-full mr-3 flex-shrink-0"></span> Compassion is Key
+                    </div>
+                    <div className="flex items-center text-sm font-semibold text-stone-800 dark:text-stone-200">
+                      <span className="w-2 h-2 bg-amber-500 rounded-full mr-3 flex-shrink-0"></span> Solidarity in Action
+                    </div>
+                  </div>
+                  <button onClick={() => openModal('Leadership Article', articleUrl)} className="mt-auto w-full md:w-auto flex items-center justify-center md:justify-start text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 font-bold tracking-widest uppercase text-xs md:text-sm group p-2 md:p-0 border md:border-none border-amber-200 rounded md:rounded-none">
+                    <BookOpen size={16} className="mr-2" /> Read My Article
+                    <span className="hidden md:block max-w-0 group-hover:max-w-full transition-all duration-500 h-0.5 bg-amber-600 dark:bg-amber-400 ml-2 w-10"></span>
+                  </button>
+                </div>
+              </FadeIn>
+              <FadeIn delay={300}>
+                <div className="bg-stone-800 text-stone-200 p-6 md:p-10 h-full shadow-xl relative overflow-hidden group">
+                  <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1544983870-1205691c9564?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center transition-transform duration-700 group-hover:scale-105"></div>
+                  <div className="relative z-10">
+                    <div className="bg-stone-700 w-12 h-12 rounded-full flex items-center justify-center mb-4 md:mb-6 text-amber-400">
+                      <MapPin size={24} />
+                    </div>
+                    <h3 className="text-xl md:text-2xl font-serif font-bold mb-3 md:mb-4 text-white">Leading in Jerusalem</h3>
+                    <p className="text-stone-300 mb-6 leading-relaxed text-sm md:text-base">
+                      Working as a school principal in a place of tension and deep history. My students carried more than backpacks; they carried the stress of their families and the conflict around them.
+                    </p>
+                    <p className="text-white italic font-serif text-base md:text-lg mb-4">"My role was to create a sanctuary."</p>
+                    <ul className="text-sm space-y-2 text-stone-400">
+                      <li className="flex items-center"><ArrowRight size={14} className="mr-2 text-amber-500 flex-shrink-0"/> Validating pain instead of dismissing it.</li>
+                      <li className="flex items-center"><ArrowRight size={14} className="mr-2 text-amber-500 flex-shrink-0"/> Being the "glue" of the community.</li>
+                    </ul>
+                  </div>
+                </div>
+              </FadeIn>
+            </div>
+          </div>
+        </section>
+
+        {/* Artistic Component I: Body Politics */}
+        <section id="body-politics" className="py-16 md:py-24 bg-[#e8e6e1] dark:bg-stone-900 transition-colors duration-500 relative overflow-hidden">
+          <svg className="absolute -left-20 top-20 w-96 h-96 text-stone-300 dark:text-stone-700 opacity-30 animate-pulse" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <path fill="currentColor" d="M44.7,-76.4C58.9,-69.2,71.8,-59.1,81.6,-46.6C91.4,-34.1,98.1,-19.2,95.8,-5.3C93.5,8.6,82.2,21.5,70.6,32.2C59,42.9,47.1,51.4,34.8,58.3C22.5,65.2,9.8,70.5,-1.9,73.8C-13.6,77.1,-24.3,78.4,-35.3,73.9C-46.3,69.4,-57.6,59.1,-66.4,47.4C-75.2,35.7,-81.5,22.6,-83.1,8.9C-84.7,-4.8,-81.6,-19.1,-73.4,-30.9C-65.2,-42.7,-51.9,-52,-38.7,-59.6C-25.5,-67.2,-12.7,-73.1,1.8,-76.2C16.3,-79.3,30.5,-79.6,44.7,-76.4Z" transform="translate(100 100)" />
+          </svg>
+          <div className="container mx-auto px-4 md:px-6 relative z-10">
+            <div className="flex flex-col md:flex-row gap-10 md:gap-16">
+              <div className="md:w-1/3 text-center md:text-left">
+                <FadeIn>
+                  <span className="text-amber-600 dark:text-amber-400 font-bold tracking-widest uppercase text-xs md:text-sm">Part II: Artistic Component</span>
+                  <h2 className="text-4xl md:text-5xl font-serif text-stone-800 dark:text-stone-100 mt-2 md:mt-4 mb-6 md:mb-8">Body Politics</h2>
+                  <div className="w-16 h-16 border border-stone-800 dark:border-stone-200 rounded-full flex items-center justify-center mb-6 mx-auto md:mx-0">
+                    <Anchor size={32} className="text-stone-800 dark:text-stone-200" />
+                  </div>
+                  <p className="text-lg font-serif italic text-stone-600 dark:text-stone-300">
+                    "We have created you... that you may know one another."
+                  </p>
+                </FadeIn>
+              </div>
+              <div className="md:w-2/3 grid gap-6 md:gap-8">
+                <FadeIn delay={200}>
+                  <div className="bg-white dark:bg-stone-800 p-6 md:p-8 border-l-8 border-rose-900 shadow-sm">
+                    <h3 className="text-xl md:text-2xl font-serif font-bold text-rose-950 dark:text-rose-200 mb-3">The Cycle of Shame</h3>
+                    <p className="text-stone-600 dark:text-stone-300 text-sm md:text-base">
+                      Societal norms and political structures often maintain power through shame, teaching us that our bodies are "too much," "not enough," or "wrong." This creates a central feeling of inadequacy.
+                    </p>
+                  </div>
+                </FadeIn>
+                <FadeIn delay={400}>
+                  <div className="bg-stone-900 dark:bg-black text-stone-100 p-6 md:p-8 shadow-sm flex flex-col md:flex-row gap-6 items-center">
+                     <div className="flex-1 w-full">
+                        <h3 className="text-xl md:text-2xl font-serif font-bold text-amber-400 mb-3">Reclaiming the Body</h3>
+                        <p className="text-stone-300 mb-4 text-sm md:text-base">
+                          We are taught to apologize for existing. The "Unapologetic Self" rejects these standards.
+                        </p>
+                        <ul className="space-y-2">
+                          <li className="flex items-center text-sm font-medium"><Heart size={16} className="text-rose-400 mr-3 flex-shrink-0"/> Embrace self-acceptance</li>
+                          <li className="flex items-center text-sm font-medium"><Heart size={16} className="text-rose-400 mr-3 flex-shrink-0"/> Peel away toxic messages</li>
+                        </ul>
+                     </div>
+                     <div className="w-full md:w-48 h-32 md:h-48 bg-stone-800 border border-stone-700 flex items-center justify-center">
+                        <span className="text-stone-600 font-serif italic text-center px-4">"Embodied Awareness"</span>
+                     </div>
+                  </div>
+                </FadeIn>
+                <FadeIn delay={600}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button onClick={() => openModal('Artistic Component: Sketch 1', sketch1Url)} className="flex items-center justify-center p-4 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-600 hover:border-amber-500 dark:hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400 transition-all group rounded md:rounded-none text-stone-800 dark:text-stone-200">
+                      <FileText className="mr-2 text-stone-400 group-hover:text-amber-500" size={20} />
+                      <span className="font-medium">View Sketch 1</span>
+                    </button>
+                    <button onClick={() => openModal('Artistic Component: Sketch 2', sketch2Url)} className="flex items-center justify-center p-4 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-600 hover:border-amber-500 dark:hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400 transition-all group rounded md:rounded-none text-stone-800 dark:text-stone-200">
+                      <FileText className="mr-2 text-stone-400 group-hover:text-amber-500" size={20} />
+                      <span className="font-medium">View Sketch 2</span>
+                    </button>
+                  </div>
+                </FadeIn>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Artistic Component II: Emergent Strategy */}
+        <section id="emergent-strategy" className="py-16 md:py-24 bg-emerald-900 text-emerald-50 relative transition-colors duration-500">
+          <div className="container mx-auto px-4 md:px-6 relative z-10">
+            <FadeIn>
+              <div className="text-center mb-12 md:mb-16">
+                <span className="text-emerald-300 font-bold tracking-widest uppercase text-xs md:text-sm">Part III: Artistic Component</span>
+                <h2 className="text-3xl md:text-5xl font-serif text-white mb-4">Emergent Strategy</h2>
+                <div className="w-16 md:w-24 h-0.5 bg-emerald-400 mx-auto opacity-50"></div>
+              </div>
+            </FadeIn>
+            <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+              <FadeIn delay={200}>
+                <div className="space-y-6 md:space-y-8">
+                  <div>
+                    <h3 className="text-2xl md:text-3xl font-serif text-emerald-200 mb-3 md:mb-4 flex items-center">
+                      <Sprout className="mr-3 md:mr-4" /> Fractals & Roots
+                    </h3>
+                    <p className="text-emerald-100/80 text-base md:text-lg leading-relaxed">
+                      Emergent Strategy is a philosophy for creating change that mimics the natural world. Instead of rigid top-down plans, we look to complex, intelligent systems that arise from simple interactions.
+                    </p>
+                  </div>
+                  <div className="pl-6 border-l-2 border-emerald-500/30 space-y-4">
+                    <p className="text-base md:text-lg italic text-white">"Small is good, small is all."</p>
+                    <p className="text-xs md:text-sm text-emerald-300">
+                      Change begins with the individual and spirals out to the community and the world. The pattern of the universe repeats. As above, so below.
+                    </p>
+                  </div>
+                  <button onClick={() => openModal('Emergent Strategy Sketch', emergentSketchUrl)} className="inline-flex items-center px-6 py-3 border border-emerald-400/50 text-emerald-100 hover:bg-emerald-800 hover:border-emerald-300 hover:text-white transition-all duration-300 rounded-sm group">
+                    <FileText className="mr-2 text-emerald-300 group-hover:text-white transition-colors" size={20} />
+                    <span className="font-medium tracking-wide">View Sketch</span>
+                  </button>
+                </div>
+              </FadeIn>
+              <FadeIn delay={400}>
+                <div className="relative group mt-8 md:mt-0">
+                  <div className="absolute inset-0 bg-emerald-400 rounded-lg transform rotate-3 opacity-20 group-hover:rotate-6 transition-transform"></div>
+                  <img src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2071&auto=format&fit=crop" alt="Nature Patterns" className="relative rounded-lg shadow-2xl grayscale group-hover:grayscale-0 transition-all duration-700" />
+                  <div className="absolute bottom-2 right-2 md:bottom-4 md:right-4 bg-emerald-950/80 backdrop-blur-sm p-3 md:p-4 rounded text-right">
+                    <h4 className="font-serif text-white text-sm md:text-base">Murmuration</h4>
+                    <p className="text-[10px] md:text-xs text-emerald-300">Healing as Orientation</p>
+                  </div>
+                </div>
+              </FadeIn>
+            </div>
+          </div>
+        </section>
+
+        {/* Reflection Section */}
+        <section id="reflection" className="py-16 md:py-24 bg-white dark:bg-stone-900 transition-colors duration-500">
+          <div className="container mx-auto px-4 md:px-6 max-w-4xl text-center">
+            <FadeIn>
+              <div className="mb-8 md:mb-12">
+                 <div className="inline-block p-4 md:p-6 rounded-full border-4 border-amber-400 mb-4 md:mb-6">
+                   <span className="text-4xl md:text-6xl font-serif font-bold text-stone-800 dark:text-white">A</span>
+                 </div>
+                 <p className="text-stone-500 dark:text-stone-400 uppercase tracking-widest font-bold text-sm">Final Grade</p>
+              </div>
+              <h2 className="text-2xl md:text-4xl font-serif text-stone-800 dark:text-stone-100 mb-6 md:mb-8 leading-relaxed">
+                "The greatest growth I experienced was in learning how to become a leader to myself."
+              </h2>
+              <div className="bg-[#faf9f6] dark:bg-stone-800 p-6 md:p-12 rounded-lg shadow-inner mb-16 transition-colors">
+                <p className="text-base md:text-lg text-stone-600 dark:text-stone-300 leading-relaxed">
+                  This class has been a nurturing and healing process. I have fully participated, taken risks, and gained rich insights applicable to my personal and professional life.
+                </p>
+                <div className="mt-8 flex justify-center space-x-2">
+                  <div className="w-2 h-2 rounded-full bg-amber-400"></div>
+                  <div className="w-2 h-2 rounded-full bg-amber-400"></div>
+                  <div className="w-2 h-2 rounded-full bg-amber-400"></div>
+                </div>
+              </div>
+              {/* Mahmoud Darwish Poem Section */}
+              <div className="relative py-12 px-6 md:px-12 bg-stone-900 dark:bg-black text-stone-300 rounded-sm overflow-hidden text-left border-y-4 border-amber-500/50">
+                <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-gradient-to-b from-transparent via-amber-500 to-transparent hidden md:block opacity-50"></div>
+                <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
+                  <div className="font-serif text-lg leading-loose space-y-2 pl-2">
+                    <div className="flex justify-between items-start mb-4 border-b border-stone-700 pb-2">
+                      <span className="text-amber-500 text-xs uppercase tracking-widest font-bold">English Translation</span>
+                      <button onClick={() => speak(englishPoem, 'en')} className={`text-stone-400 hover:text-amber-400 transition-colors ${activeLang === 'en' ? 'text-amber-400 animate-pulse' : ''}`} title="Listen in English">
+                        {activeLang === 'en' ? <Square size={20} /> : <Volume2 size={20} />}
+                      </button>
+                    </div>
+                    <p>As you prepare your breakfast, think of others <br/><span className="text-sm text-stone-500 italic">(do not forget the pigeon's food).</span></p>
+                    <p>As you conduct your wars, think of others <br/><span className="text-sm text-stone-500 italic">(do not forget those who seek peace).</span></p>
+                    <p>As you pay your water bill, think of others <br/><span className="text-sm text-stone-500 italic">(those who are nursed by clouds).</span></p>
+                    <p>As you return home, to your home, think of others <br/><span className="text-sm text-stone-500 italic">(do not forget the people of the tents).</span></p>
+                    <p>As you sleep and count the stars, think of others...</p>
+                    <p className="mt-4 text-amber-500 font-bold text-sm tracking-widest uppercase">— Mahmoud Darwish</p>
+                  </div>
+                  <div className="font-arabic text-xl md:text-2xl leading-loose text-right" dir="rtl">
+                     <div className="flex justify-between items-start mb-4 border-b border-stone-700 pb-2 flex-row-reverse">
+                      <span className="text-amber-500 text-xs uppercase tracking-widest font-bold font-sans">Arabic Original</span>
+                      <button onClick={() => speak(arabicPoem, 'ar')} className={`text-stone-400 hover:text-amber-400 transition-colors ${activeLang === 'ar' ? 'text-amber-400 animate-pulse' : ''}`} title="Listen in Arabic">
+                        {activeLang === 'ar' ? <Square size={20} /> : <Volume2 size={20} />}
+                      </button>
+                    </div>
+                    <p>وأنتَ تُعِدُّ فطورك، فكِّر بغيركَ <br/><span className="text-base text-stone-500">(لا تَنْسَ قوتَ الحمام)</span></p>
+                    <p>وأنتَ تخوضُ حروبكَ، فكِّر بغيركَ <br/><span className="text-base text-stone-500">(لا تنس مَنْ يطلبون السلام)</span></p>
+                    <p>وأنتَ تسدد فاتورةَ الماء، فكِّر بغيركَ <br/><span className="text-base text-stone-500">(مَنْ يرضَعُون الغمامٍ)</span></p>
+                    <p>وأنتَ تعودُ إلى البيت، بيتكَ، فكِّر بغيركَ <br/><span className="text-base text-stone-500">(لا تنس شعب الخيامْ)</span></p>
+                    <p>وأنت تنام وتُحصي الكواكبَ، فكِّر بغيركَ...</p>
+                    <p className="mt-4 text-amber-500 font-bold text-sm tracking-widest uppercase font-sans" dir="ltr">Mahmoud Darwish</p>
+                  </div>
+                </div>
+              </div>
+            </FadeIn>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="bg-stone-900 dark:bg-black text-stone-400 py-12 md:py-16 border-t border-stone-800">
+          <div className="container mx-auto px-4 md:px-6 grid md:grid-cols-3 gap-8 md:gap-12 text-center md:text-left">
+            <div>
+              <h3 className="text-white text-xl font-serif mb-4">Musa Abu Hadeed</h3>
+              <p className="text-sm leading-relaxed">
+                Transformative Leadership in Arts & Learning.<br/>
+                Centering Justice and Collective Action.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-white text-xl font-serif mb-4">Themes</h3>
+              <ul className="space-y-2 text-sm">
+                <li>Healing & Restoration</li>
+                <li>Kintsugi Metaphor</li>
+                <li>Social Justice</li>
+                <li>Embodied Leadership</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-white text-xl font-serif mb-4">Contact</h3>
+              <p className="text-sm mb-4">Open for collaboration on educational leadership and arts integration projects.</p>
+              <a href="mailto:mafe504@gmail.com" className="text-amber-500 hover:text-amber-400 text-sm font-bold uppercase tracking-widest flex items-center justify-center md:justify-start group">
+                Get in Touch <ArrowRight size={16} className="ml-2 transform group-hover:translate-x-1 transition-transform"/>
+              </a>
+            </div>
+          </div>
+          <div className="container mx-auto px-4 md:px-6 mt-12 md:mt-16 pt-8 border-t border-stone-800 text-center text-xs text-stone-600">
+            <p>&copy; 2025 Musa Abu Hadeed Portfolio. Design inspired by Kintsugi & Emergent Strategy.</p>
+          </div>
+        </footer>
+      </div>
+    </div>
+  );
+}
